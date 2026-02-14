@@ -2,6 +2,7 @@ from flask import render_template, request, redirect, session, flash, current_ap
 from bson import ObjectId
 from datetime import datetime
 from . import bank_bp
+from flask import jsonify
 
 
 # ---------------- LOGIN ----------------
@@ -221,6 +222,58 @@ def forgot_password():
         return redirect("/bank/login")
     return render_template("forgot_password.html")
 
+#-----------------API--------------------
+@bank_bp.route("/api/pay", methods=["POST"])
+def api_pay():
+    data = request.json
+
+    username = data.get("username")
+    amount = float(data.get("amount"))
+
+    bank_db = current_app.bank_db
+
+    user = bank_db.users.find_one({"login_id": username})
+    admin = bank_db.users.find_one({"role": "ADMIN"})
+
+    if not user:
+        return jsonify({"status": "error", "msg": "User not found"})
+
+    if user["balance"] < amount:
+        return jsonify({"status": "error", "msg": "Insufficient balance"})
+
+    # debit user
+    bank_db.users.update_one(
+        {"_id": user["_id"]},
+        {"$inc": {"balance": -amount}}
+    )
+
+    # credit admin
+    bank_db.users.update_one(
+        {"_id": admin["_id"]},
+        {"$inc": {"balance": amount}}
+    )
+
+    from datetime import datetime
+
+    bank_db.transactions.insert_many([
+        {
+            "user_id": user["_id"],
+            "amount": amount,
+            "type": "DEBIT",
+            "role": "SHOP",
+            "created_at": datetime.utcnow()
+        },
+        {
+            "user_id": admin["_id"],
+            "amount": amount,
+            "type": "CREDIT",
+            "role": "SHOP",
+            "created_at": datetime.utcnow()
+        }
+    ])
+
+    return jsonify({"status": "success"})
+    
 # ---------------- LOGOUT ----------------
 @bank_bp.route("/logout")
 def logout():

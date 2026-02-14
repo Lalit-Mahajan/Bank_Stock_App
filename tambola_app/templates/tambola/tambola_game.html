@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="/static/tambola/style.css">
+
+<div class="bg-dark text-white p-2 fixed-top d-flex justify-content-between">
+    <span>🎲 Tambola</span>
+    <span>
+        {{ username }} |
+        💰 ₹ {{ balance }}
+        <a href="/tambola/lobby" class="btn btn-sm btn-warning ms-2">Wallet</a>
+    </span>
+</div>
+
+<div style="height:60px"></div>
+
+{% include "tambola/game_body.html" %}
