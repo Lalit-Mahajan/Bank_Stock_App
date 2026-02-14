@@ -273,7 +273,7 @@ def api_pay():
     ])
 
     return jsonify({"status": "success"})
-    
+
 # ---------------- LOGOUT ----------------
 @bank_bp.route("/logout")
 def logout():
